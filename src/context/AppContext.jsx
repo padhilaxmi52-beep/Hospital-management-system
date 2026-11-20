@@ -360,3 +360,407 @@ export const AppProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
+
+
+
+// import React, { createContext, useState, useEffect } from 'react';
+// import authService from '../services/authService';
+// import patientService from '../services/patientService';
+// import doctorService from '../services/doctorService';
+// import employeeService from '../services/employeeService';
+// import recordService from '../services/recordService';
+// import appointmentService from '../services/appointmentService';
+// import statsService from '../services/statsService';
+
+// export const AppContext = createContext();
+
+// export const AppProvider = ({ children }) => {
+//     const [doctors, setDoctors] = useState([]);
+//     const [patients, setPatients] = useState([]);
+//     const [employees, setEmployees] = useState([]);
+//     const [records, setRecords] = useState([]);
+//     const [appointments, setAppointments] = useState([]);
+//     const [session, setSession] = useState(null);
+//     const [loading, setLoading] = useState(true);
+//     const [error, setError] = useState(null);
+//     // ✅ Add this to prevent multiple loads
+//     const [isLoaded, setIsLoaded] = useState(false);
+
+//     // ============================================================
+//     // ✅ FIXED: LOAD DATA ONCE - Runs only on mount
+//     // ============================================================
+//     useEffect(() => {
+//         // ✅ Prevent double loading
+//         if (isLoaded) return;
+        
+//         const loadData = async () => {
+//             try {
+//                 setLoading(true);
+//                 console.log(' Loading data from database...');
+
+//                 const user = authService.getCurrentUser();
+//                 if (user) {
+//                     setSession({ user });
+//                 }
+
+//                 const [patientsRes, doctorsRes, employeesRes, recordsRes, appointmentsRes] = await Promise.all([
+//                     patientService.getAll().catch(() => ({ patients: [] })),
+//                     doctorService.getAll().catch(() => ({ doctors: [] })),
+//                     employeeService.getAll().catch(() => ({ employees: [] })),
+//                     recordService.getAll().catch(() => ({ records: [] })),
+//                     appointmentService.getAll().catch(() => ({ appointments: [] }))
+//                 ]);
+
+//                 setPatients(patientsRes.patients || []);
+//                 setDoctors(doctorsRes.doctors || []);
+//                 setEmployees(employeesRes.employees || []);
+//                 setRecords(recordsRes.records || []);
+//                 setAppointments(appointmentsRes.appointments || []);
+                
+//                 // ✅ Mark as loaded
+//                 setIsLoaded(true);
+//                 console.log('✅ Data loaded from DATABASE');
+//             } catch (error) {
+//                 console.error('❌ Failed to load data:', error);
+//                 setError('Failed to connect to server.');
+//             } finally {
+//                 setLoading(false);
+//             }
+//         };
+
+//         // loadData();
+//     }, [isLoaded]); // ✅ Runs only once
+
+//     // ============================================================
+//     // AUTH ACTIONS
+//     // ============================================================
+
+//     const login = async (email, password) => {
+//         try {
+//             setError(null);
+//             console.log('🔐 Logging in...', { email });
+            
+//             const data = await authService.login(email, password);
+            
+//             if (data.success) {
+//                 setSession({ user: data.user });
+//                 // ✅ Refresh data after login
+//                 await refreshData();
+//                 console.log('✅ Login successful:', data.user.name);
+//                 return data.user;
+//             }
+            
+//             setError('Invalid email or password');
+//             return null;
+//         } catch (error) {
+//             console.error('❌ Login error:', error);
+//             setError(error.response?.data?.message || 'Login failed');
+//             return null;
+//         }
+//     };
+
+//     const logout = () => {
+//         authService.logout();
+//         setSession(null);
+//         setPatients([]);
+//         setDoctors([]);
+//         setEmployees([]);
+//         setRecords([]);
+//         setAppointments([]);
+//         // ✅ Reset load state so data loads on next login
+//         setIsLoaded(false);
+//         console.log('👋 Logged out');
+//     };
+
+//     const registerPatient = async (name, email, password, address, phone) => {
+//         try {
+//             setError(null);
+//             console.log('📝 Registering patient:', { name, email });
+            
+//             const data = await authService.register({ 
+//                 name, 
+//                 email, 
+//                 password, 
+//                 address, 
+//                 phone: phone || '9876543210'
+//             });
+            
+//             if (data.success) {
+//                 setSession({ user: data.user });
+//                 await refreshData();
+//                 return { success: true, user: data.user };
+//             }
+            
+//             setError(data.message || 'Registration failed');
+//             return { success: false, message: data.message };
+//         } catch (error) {
+//             console.error('❌ Register error:', error);
+//             const errorMessage = error.response?.data?.message || 'Registration failed';
+//             setError(errorMessage);
+//             return { success: false, message: errorMessage };
+//         }
+//     };
+
+//     // ============================================================
+//     // REFRESH DATA - Called manually
+//     // ============================================================
+
+//     const refreshData = async () => {
+//         try {
+//             console.log('🔄 Refreshing data from database...');
+            
+//             const [patientsRes, doctorsRes, employeesRes, recordsRes, appointmentsRes] = await Promise.all([
+//                 patientService.getAll().catch(() => ({ patients: [] })),
+//                 doctorService.getAll().catch(() => ({ doctors: [] })),
+//                 employeeService.getAll().catch(() => ({ employees: [] })),
+//                 recordService.getAll().catch(() => ({ records: [] })),
+//                 appointmentService.getAll().catch(() => ({ appointments: [] }))
+//             ]);
+
+//             setPatients(patientsRes.patients || []);
+//             setDoctors(doctorsRes.doctors || []);
+//             setEmployees(employeesRes.employees || []);
+//             setRecords(recordsRes.records || []);
+//             setAppointments(appointmentsRes.appointments || []);
+            
+//             console.log('✅ Data refreshed from database');
+//         } catch (error) {
+//             console.error('❌ Refresh data error:', error);
+//         }
+//     };
+
+//     // ============================================================
+//     // PATIENT ACTIONS
+//     // ============================================================
+
+//     const addPatient = async (patientData) => {
+//         try {
+//             setError(null);
+//             console.log('📤 Adding patient:', patientData);
+            
+//             const data = await patientService.create(patientData);
+            
+//             if (data.success) {
+//                 console.log('✅ Patient saved to DATABASE:', data.patient);
+//                 await refreshData();
+//                 return data.patient;
+//             }
+            
+//             setError(data.message || 'Failed to add patient');
+//             return null;
+//         } catch (error) {
+//             console.error('❌ Add patient error:', error);
+//             setError(error.response?.data?.message || 'Failed to add patient');
+//             return null;
+//         }
+//     };
+
+//     const deletePatient = async (id) => {
+//         try {
+//             setError(null);
+//             console.log('🗑️ Deleting patient:', id);
+            
+//             const data = await patientService.delete(id);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return true;
+//             }
+            
+//             setError(data.message || 'Failed to delete patient');
+//             return false;
+//         } catch (error) {
+//             console.error('❌ Delete patient error:', error);
+//             setError(error.response?.data?.message || 'Failed to delete patient');
+//             return false;
+//         }
+//     };
+
+//     const updatePatientProfile = async (id, data) => {
+//         try {
+//             setError(null);
+//             console.log('📝 Updating patient:', id);
+            
+//             const response = await patientService.update(id, data);
+            
+//             if (response.success) {
+//                 await refreshData();
+//                 if (session?.user?.id === id) {
+//                     const updatedUser = { ...session.user, name: data.name, email: data.email };
+//                     localStorage.setItem('user', JSON.stringify(updatedUser));
+//                     setSession({ user: updatedUser });
+//                 }
+//                 return true;
+//             }
+            
+//             setError(response.message || 'Failed to update patient');
+//             return false;
+//         } catch (error) {
+//             console.error('❌ Update patient error:', error);
+//             setError(error.response?.data?.message || 'Failed to update patient');
+//             return false;
+//         }
+//     };
+
+//     // ============================================================
+//     // DOCTOR ACTIONS
+//     // ============================================================
+
+//     const addDoctor = async (doctorData) => {
+//         try {
+//             setError(null);
+//             console.log('👨‍⚕️ Adding doctor:', doctorData.name);
+            
+//             const data = await doctorService.create(doctorData);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return data.doctor;
+//             }
+            
+//             setError(data.message || 'Failed to add doctor');
+//             return null;
+//         } catch (error) {
+//             console.error('❌ Add doctor error:', error);
+//             setError(error.response?.data?.message || 'Failed to add doctor');
+//             return null;
+//         }
+//     };
+
+//     const deleteDoctor = async (id) => {
+//         try {
+//             setError(null);
+//             console.log('🗑️ Deleting doctor:', id);
+            
+//             const data = await doctorService.delete(id);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return true;
+//             }
+            
+//             setError(data.message || 'Failed to delete doctor');
+//             return false;
+//         } catch (error) {
+//             console.error('❌ Delete doctor error:', error);
+//             setError(error.response?.data?.message || 'Failed to delete doctor');
+//             return false;
+//         }
+//     };
+
+//     // ============================================================
+//     // RECORD ACTIONS
+//     // ============================================================
+
+//     const addRecord = async (recordData) => {
+//         try {
+//             setError(null);
+//             console.log('📋 Adding medical record:', recordData);
+            
+//             const data = await recordService.create(recordData);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return data.record;
+//             }
+            
+//             setError(data.message || 'Failed to add record');
+//             return null;
+//         } catch (error) {
+//             console.error('❌ Add record error:', error);
+//             setError(error.response?.data?.message || 'Failed to add record');
+//             return null;
+//         }
+//     };
+
+//     // ============================================================
+//     // APPOINTMENT ACTIONS
+//     // ============================================================
+
+//     const bookAppointment = async (appData) => {
+//         try {
+//             setError(null);
+//             console.log('📅 Booking appointment:', appData);
+            
+//             const data = await appointmentService.create(appData);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return data.appointment;
+//             }
+            
+//             setError(data.message || 'Failed to book appointment');
+//             return null;
+//         } catch (error) {
+//             console.error('❌ Book appointment error:', error);
+//             setError(error.response?.data?.message || 'Failed to book appointment');
+//             return null;
+//         }
+//     };
+
+//     const updateAppointmentStatus = async (id, status) => {
+//         try {
+//             setError(null);
+//             console.log('🔄 Updating appointment status:', { id, status });
+            
+//             const data = await appointmentService.updateStatus(id, status);
+            
+//             if (data.success) {
+//                 await refreshData();
+//                 return true;
+//             }
+            
+//             setError(data.message || 'Failed to update appointment');
+//             return false;
+//         } catch (error) {
+//             console.error('❌ Update appointment error:', error);
+//             setError(error.response?.data?.message || 'Failed to update appointment');
+//             return false;
+//         }
+//     };
+
+//     // ============================================================
+//     // STATS
+//     // ============================================================
+
+//     const getStats = () => {
+//     return {
+//         patients: patients.length,
+//         doctors: doctors.length,
+//         employees: employees.length,
+//         records: records.length,
+//         appointments: appointments.length
+//     };
+// };
+//     return (
+//         <AppContext.Provider value={{
+//             doctors,
+//             patients,
+//             employees,
+//             records,
+//             appointments,
+//             session,
+//             loading,
+//             error,
+//             login,
+//             logout,
+//             registerPatient,
+//             addPatient,
+//             deletePatient,
+//             updatePatientProfile,
+//             addDoctor,
+//             deleteDoctor,
+//             addRecord,
+//             bookAppointment,
+//             updateAppointmentStatus,
+//             getStats,
+//             refreshData,
+//             clearError: () => setError(null)
+//         }}>
+//             {children}
+//         </AppContext.Provider>
+//     );
+// };
+
+
+
